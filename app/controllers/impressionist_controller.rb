@@ -31,9 +31,7 @@ module ImpressionistController
               params: params_hash,
               message: message})
           else
-            if unique_instance?(obj, opts[:unique])
-              obj.impressions.create(associative_create_statement({:message => message}))
-            end
+            obj.impressions.create(associative_create_statement({:message => message})) if unique_instance?(obj, opts[:unique])
           end
         else
           # we could create an impression anyway. for classes, too. why not?
@@ -65,8 +63,8 @@ module ImpressionistController
               ip_address: request.remote_ip,
               referrer: request.referer,
               params: params_hash})
-          else if unique?(opts[:unique])
-            Impression.create(direct_create_statement)
+          else
+            Impression.create(direct_create_statement) if unique?(opts[:unique])
           end
         end
       end
