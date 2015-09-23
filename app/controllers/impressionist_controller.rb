@@ -13,10 +13,27 @@ module ImpressionistController
     end
 
     def impressionist(obj,message=nil,opts={})
+      async = opts[:async]
       if should_count_impression?(opts)
         if obj.respond_to?("impressionable?")
-          if unique_instance?(obj, opts[:unique])
-            obj.impressions.create(associative_create_statement({:message => message}))
+          if async
+            ImpresssionistObjectWorker.perform_async({
+              options: opts,
+              impressionable_type: obj.class,
+              impressionable_id: obj.id,
+              controller_name: controller_name,
+              action_name: action_name,
+              user_id: user_id,
+              request_hash: @impressionist_hash,
+              session_hash: session_hash,
+              ip_address: request.remote_ip,
+              referrer: request.referer,
+              params: params_hash,
+              message: message})
+          else
+            if unique_instance?(obj, opts[:unique])
+              obj.impressions.create(associative_create_statement({:message => message}))
+            end
           end
         else
           # we could create an impression anyway. for classes, too. why not?
@@ -30,11 +47,27 @@ module ImpressionistController
     end
 
     def impressionist_subapp_filter(opts = {})
+      async = opts[:async]
       if should_count_impression?(opts)
         actions = opts[:actions]
         actions.collect!{|a|a.to_s} unless actions.blank?
-        if (actions.blank? || actions.include?(action_name)) && unique?(opts[:unique])
-          Impression.create(direct_create_statement)
+        if actions.blank? || actions.include?(action_name)
+          if async
+            ImpresssionistWorker.perform_async({
+              options: opts,
+              impressionable_type: controller_name.singularize.camelize,
+              impressionable_id: impressionable.present? ? impressionable.id : params[:id],
+              controller_name: controller_name,
+              action_name: action_name,
+              user_id: user_id,
+              request_hash: @impressionist_hash,
+              session_hash: session_hash,
+              ip_address: request.remote_ip,
+              referrer: request.referer,
+              params: params_hash})
+          else if unique?(opts[:unique])
+            Impression.create(direct_create_statement)
+          end
         end
       end
     end
@@ -103,7 +136,7 @@ module ImpressionistController
       request_param = params_hash
       impressions.detect{|impression| impression.params == request_param }.nil?
     end
-    
+
     # creates the query to check for uniqueness
     def unique_query(unique_opts,impressionable=nil)
       full_statement = direct_create_statement({},impressionable)
