@@ -7,17 +7,13 @@ module ImpressionistController
     end
   end
 
-  module InstanceMethods
-    def self.included(base)
-      base.before_filter :impressionist_app_filter
-    end
-
+  module CommonMethods
     def impressionist(obj,message=nil,opts={})
       async = opts[:async]
       if should_count_impression?(opts)
         if obj.respond_to?("impressionable?")
           if async
-            ImpresssionistObjectWorker.perform_async({
+            ImpressionistObjectWorker.perform_async({
               options: opts,
               impressionable_type: obj.class,
               impressionable_id: obj.id,
@@ -51,10 +47,10 @@ module ImpressionistController
         actions.collect!{|a|a.to_s} unless actions.blank?
         if actions.blank? || actions.include?(action_name)
           if async
-            ImpresssionistWorker.perform_async({
+            ImpressionistWorker.perform_async({
               options: opts,
               impressionable_type: controller_name.singularize.camelize,
-              impressionable_id: impressionable.present? ? impressionable.id : params[:id],
+              impressionable_id: params[:id],
               controller_name: controller_name,
               action_name: action_name,
               user_id: user_id,
@@ -174,4 +170,12 @@ module ImpressionistController
       user_id
     end
   end
+
+  module InstanceMethods
+    include CommonMethods
+    def self.included(base)
+      base.before_filter :impressionist_app_filter
+    end
+  end
+
 end

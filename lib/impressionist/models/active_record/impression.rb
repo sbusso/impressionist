@@ -10,5 +10,5 @@ class Impression < ActiveRecord::Base
   Impressionist::SetupAssociation.new(self).set
 
   store :params
-  after_save :impressionable_counter_cache_updatable?
+  # after_save :impressionable_counter_cache_updatable?
 end

@@ -19,7 +19,8 @@ class Impression
   field :session_hash
   field :message
   field :referrer
+  field :params
 
-  after_save :impressionable_counter_cache_updatable?
+  # after_save :impressionable_counter_cache_updatable?
 
 end
