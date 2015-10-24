@@ -160,7 +160,7 @@ module ImpressionistController
     end
 
     def params_hash
-      request.params.except(:controller, :action, :id)
+      params.except(:controller, :action, :id)
     end
 
     #use both @current_user and current_user helper
